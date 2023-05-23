@@ -1,80 +1,32 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  node-runtime-serve-static
+  Nuxt 3 Serverless SSR in AWS
 Parameters:
   DomainName:
     Type: String
     Description: Domian name for api
-    Default: "internal-poc.appmanteam.com"
+    Default: 'internal-poc.appmanteam.com'
   StageName:
     Type: String
     Default: $default
 
 Resources:
-  # NuxtDemo:
-  #   Type: AWS::Serverless::HttpApi
-  #   Properties:
-  #     StageName: $default
-      # Domain:
-      #   DomainName: example.com
-      #   CertificateArn: arn:aws:acm:region:accountid:certificate/certificateid
-      #   EndpointConfiguration: REGIONAL
-      #   Route53:
-      #     HostedZoneId: hostid
-
-  # NuxtDemoMapping: # Creates the api gateway mapping
-  #   Type: AWS::ApiGatewayV2::ApiMapping
-  #   DependsOn: ServerlessRestApiProdStage
-  #   Properties: 
-  #     ApiId: !Ref ServerlessRestApi
-  #     ApiMappingKey: nuxt
-  #     DomainName: !Ref DomainName
-  #     # Stage: Prod
-  #     Stage: !Ref StageName
-
-  ServerlessRestApi:
-    # Type: AWS::Serverless::Api
-    Type: AWS::Serverless::RestApi
-    # DependsOn: HelloWorldFunction
-    Properties:
-      Description: Nuxt Demo Api
-      # StageName: Prod
-      StageName: !Ref StageName
-      EndpointConfiguration:
-        Type: Regional
-
-  ConfigLambdaPermission:
-    Type: "AWS::Lambda::Permission"
-    DependsOn:
-      - ServerlessRestApi
-      - NuxtDemoFunction
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref NuxtDemoFunction
-      Principal: apigateway.amazonaws.com
-
-  NuxtDemoFunction:
+  ExpressApi:
+    Type: AWS::Serverless::HttpApi
+  # "s3BucketName": "sls-xpress-edge1",
+  ExpressLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: index.handler
+      MemorySize: 1024
       Runtime: nodejs18.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description: Nuxt 3 SSR Lambda
+      Timeout: 30
       Events:
-        ProxyResource:
-          # Type: HttpApi
-          Type: Api
+        ProxyApiRoot:
+          Type: HttpApi
           Properties:
-            # ApiId: !Ref NuxtDemo
-            RestApiId: !Ref ServerlessRestApi
-            Path: $default
-            Method: any
-      Policies:
-        - AmazonDynamoDBFullAccess
+            ApiId: !Ref ExpressApi
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
@@ -82,7 +34,7 @@ Outputs:
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   NodeNextApi:
     Description: API Gateway endpoint URL for default stage for Node Next function
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/default/"
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/default/'
   NuxtDemoFunction:
     Description: Nuxt Demo Lambda Function ARN
     Value: !GetAtt NuxtDemoFunction.Arn
