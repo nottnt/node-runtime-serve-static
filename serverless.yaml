@@ -1,0 +1,15 @@
+service: node-runtime-serve-static
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  region: ap-southeast-1
+
+functions:
+  app:
+    handler: index.handler
+    events:
+      - http: GET /
+  plugins:
+    - serverless-offline
