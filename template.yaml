@@ -1,39 +1,39 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: The AWS CloudFormation template for this Serverless application
 Resources:
-  # ServerlessDeploymentBucket:
-  #   Type: AWS::S3::Bucket
-  #   Properties:
-  #     BucketEncryption:
-  #       ServerSideEncryptionConfiguration:
-  #         - ServerSideEncryptionByDefault:
-  #             SSEAlgorithm: AES256
-  # ServerlessDeploymentBucketPolicy:
-    # Type: AWS::S3::BucketPolicy
-    # Properties:
-    #   Bucket: !Ref 'ServerlessDeploymentBucket'
-    #   PolicyDocument:
-    #     Statement:
-    #       - Action: s3:*
-    #         Effect: Deny
-    #         Principal: '*'
-    #         Resource:
-    #           - !Join
-    #             - ''
-    #             - - 'arn:'
-    #               - !Ref 'AWS::Partition'
-    #               - ':s3:::'
-    #               - !Ref 'ServerlessDeploymentBucket'
-    #               - /*
-    #           - !Join
-    #             - ''
-    #             - - 'arn:'
-    #               - !Ref 'AWS::Partition'
-    #               - ':s3:::'
-    #               - !Ref 'ServerlessDeploymentBucket'
-    #         Condition:
-    #           Bool:
-    #             aws:SecureTransport: false
+  ServerlessDeploymentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+  ServerlessDeploymentBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref 'ServerlessDeploymentBucket'
+      PolicyDocument:
+        Statement:
+          - Action: s3:*
+            Effect: Deny
+            Principal: '*'
+            Resource:
+              - !Join
+                - ''
+                - - 'arn:'
+                  - !Ref 'AWS::Partition'
+                  - ':s3:::'
+                  - !Ref 'ServerlessDeploymentBucket'
+                  - /*
+              - !Join
+                - ''
+                - - 'arn:'
+                  - !Ref 'AWS::Partition'
+                  - ':s3:::'
+                  - !Ref 'ServerlessDeploymentBucket'
+            Condition:
+              Bool:
+                aws:SecureTransport: false
   AppLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -81,9 +81,9 @@ Resources:
   AppLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
-      # Code:
-      #   S3Bucket: !Ref 'ServerlessDeploymentBucket'
-      #   S3Key: serverless/node-runtime-serve-static/dev/1684902069179-2023-05-24T04:21:09.179Z/node-runtime-serve-static.zip
+      Code:
+        S3Bucket: !Ref 'ServerlessDeploymentBucket'
+        S3Key: serverless/node-runtime-serve-static/dev/1684914445316-2023-05-24T07:47:25.316Z/node-runtime-serve-static.zip
       Handler: index.handler
       Runtime: nodejs18.x
       FunctionName: node-runtime-serve-static-dev-app
@@ -92,12 +92,6 @@ Resources:
       Role: !GetAtt 'IamRoleLambdaExecution.Arn'
     DependsOn:
       - AppLogGroup
-  # AppLambdaVersion525eBVkEtu3OjHLlqSQKNPl8GF2OGi0zT3446rtvCs:
-  #   Type: AWS::Lambda::Version
-  #   DeletionPolicy: Retain
-  #   Properties:
-  #     FunctionName: !Ref 'AppLambdaFunction'
-  #     CodeSha256: M6I+TR6X+I/i1aXw//coUDJ8bIGApWXaWj5Tea4aHe8=
   ApiGatewayRestApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
@@ -130,7 +124,7 @@ Resources:
       MethodResponses: []
     DependsOn:
       - AppLambdaPermissionApiGateway
-  ApiGatewayDeployment1684902049434:
+  ApiGatewayDeployment1684914426041:
     Type: AWS::ApiGateway::Deployment
     Properties:
       RestApiId: !Ref 'ApiGatewayRestApi'
@@ -155,15 +149,15 @@ Resources:
           - !Ref 'ApiGatewayRestApi'
           - /*/*
 Outputs:
-  # ServerlessDeploymentBucketName:
-  #   Value: !Ref 'ServerlessDeploymentBucket'
-  #   Export:
-  #     Name: sls-node-runtime-serve-static-dev-ServerlessDeploymentBucketName
-  # AppLambdaFunctionQualifiedArn:
-  #   Description: Current Lambda function version
-  #   Value: !Ref 'AppLambdaVersion525eBVkEtu3OjHLlqSQKNPl8GF2OGi0zT3446rtvCs'
-  #   Export:
-  #     Name: sls-node-runtime-serve-static-dev-AppLambdaFunctionQualifiedArn
+  ServerlessDeploymentBucketName:
+    Value: !Ref 'ServerlessDeploymentBucket'
+    Export:
+      Name: sls-node-runtime-serve-static-dev-ServerlessDeploymentBucketName
+  AppLambdaFunctionQualifiedArn:
+    Description: Current Lambda function version
+    Value: !Ref 'AppLambdaVersionWhNyGgsnUTLn44rKupI10njfcrO3V53fWq51SjwSFM'
+    Export:
+      Name: sls-node-runtime-serve-static-dev-AppLambdaFunctionQualifiedArn
   ServiceEndpoint:
     Description: URL of the service endpoint
     Value: !Join
