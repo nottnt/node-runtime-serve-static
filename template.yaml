@@ -1,54 +1,14 @@
 AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
 Description: The AWS CloudFormation template for this Serverless application
 Resources:
   NodeServeStaticLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/node-runtime-serve-static
-  IamRoleLambdaExecution:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Policies:
-        - PolicyName: !Join
-            - '-'
-            - - node-runtime-serve-static
-              - dev
-              - lambda
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogStream
-                  - logs:CreateLogGroup
-                  - logs:TagResource
-                Resource:
-                  - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/node-runtime-serve-static-dev*:*'
-              - Effect: Allow
-                Action:
-                  - logs:PutLogEvents
-                Resource:
-                  - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/node-runtime-serve-static-dev*:*:*'
-      Path: /
-      RoleName: !Join
-        - '-'
-        - - node-runtime-serve-static
-          - dev
-          - !Ref 'AWS::Region'
-          - lambdaRole
   NodeServeStaticFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: output
       Handler: index.handler
       Runtime: nodejs18.x
       FunctionName: node-runtime-serve-static
@@ -57,107 +17,16 @@ Resources:
       Environment:
         Variables:
           NODE_ENV: dev
-      Role: !GetAtt 'IamRoleLambdaExecution.Arn'
+      Events:
+        EntryPoint:
+          Type: Api
+          Properties:
+            Path: /
+            Method: get
+        EntryPointProxy:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
     DependsOn:
       - NodeServeStaticLogGroup
-  ApiGatewayRestApi:
-    Type: AWS::ApiGateway::RestApi
-    Properties:
-      Name: node-runtime-serve-static
-      EndpointConfiguration:
-        Types:
-          - EDGE
-      Policy: ''
-  ApiGatewayResourceProxyVar:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      ParentId: !GetAtt 'ApiGatewayRestApi.RootResourceId'
-      PathPart: '{proxy+}'
-      RestApiId: !Ref 'ApiGatewayRestApi'
-  ApiGatewayMethodAny:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      HttpMethod: ANY
-      RequestParameters: {}
-      ResourceId: !GetAtt 'ApiGatewayRestApi.RootResourceId'
-      RestApiId: !Ref 'ApiGatewayRestApi'
-      ApiKeyRequired: false
-      AuthorizationType: NONE
-      Integration:
-        IntegrationHttpMethod: POST
-        Type: AWS_PROXY
-        Uri: !Join
-          - ''
-          - - 'arn:'
-            - !Ref 'AWS::Partition'
-            - ':apigateway:'
-            - !Ref 'AWS::Region'
-            - :lambda:path/2015-03-31/functions/
-            - !GetAtt 'NodeServeStaticFunction.Arn'
-            - /invocations
-      MethodResponses: []
-    DependsOn:
-      - NuxtLambdaPermissionApiGateway
-  ApiGatewayMethodProxyVarAny:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      HttpMethod: ANY
-      RequestParameters: {}
-      ResourceId: !Ref 'ApiGatewayResourceProxyVar'
-      RestApiId: !Ref 'ApiGatewayRestApi'
-      ApiKeyRequired: false
-      AuthorizationType: NONE
-      Integration:
-        IntegrationHttpMethod: POST
-        Type: AWS_PROXY
-        Uri: !Join
-          - ''
-          - - 'arn:'
-            - !Ref 'AWS::Partition'
-            - ':apigateway:'
-            - !Ref 'AWS::Region'
-            - :lambda:path/2015-03-31/functions/
-            - !GetAtt 'NodeServeStaticFunction.Arn'
-            - /invocations
-      MethodResponses: []
-    DependsOn:
-      - NuxtLambdaPermissionApiGateway
-  ApiGatewayDeployment1684885449091:
-    Type: AWS::ApiGateway::Deployment
-    Properties:
-      RestApiId: !Ref 'ApiGatewayRestApi'
-      StageName: dev
-    DependsOn:
-      - ApiGatewayMethodAny
-      - ApiGatewayMethodProxyVarAny
-  NuxtLambdaPermissionApiGateway:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt 'NodeServeStaticFunction.Arn'
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Join
-        - ''
-        - - 'arn:'
-          - !Ref 'AWS::Partition'
-          - ':execute-api:'
-          - !Ref 'AWS::Region'
-          - ':'
-          - !Ref 'AWS::AccountId'
-          - ':'
-          - !Ref 'ApiGatewayRestApi'
-          - /*/*
-Outputs:
-  ServiceEndpoint:
-    Description: URL of the service endpoint
-    Value: !Join
-      - ''
-      - - https://
-        - !Ref 'ApiGatewayRestApi'
-        - .execute-api.
-        - !Ref 'AWS::Region'
-        - .
-        - !Ref 'AWS::URLSuffix'
-        - /dev
-    Export:
-      Name: sls-node-runtime-serve-static-ServiceEndpoint

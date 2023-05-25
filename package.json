@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build-app": "npm run build-client && npm install && npm start",
-    "compress-lambda-resource": "cp ./node_module ./output && cp ./index.js ./output",
+    "compress-lambda-resource": "cp -r ./node_modules ./output && cp ./index.js ./output",
     "build-client": "mkdir -p output/public && npm run compress-lambda-resource && cd client && npm run build && cd ..",
     "start": "pm2 start index.js -n Convertible9000 && pm2 monit",
     "start-dev": "node index.js"
@@ -16,8 +16,5 @@
   "dependencies": {
     "express": "^4.18.2",
     "serverless-http": "^3.2.0"
-  },
-  "devDependencies": {
-    "serverless-offline": "^12.0.4"
   }
 }
