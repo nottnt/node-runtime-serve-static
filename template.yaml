@@ -1,43 +1,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: The AWS CloudFormation template for this Serverless application
 Resources:
-  ServerlessDeploymentBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-  ServerlessDeploymentBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref 'ServerlessDeploymentBucket'
-      PolicyDocument:
-        Statement:
-          - Action: s3:*
-            Effect: Deny
-            Principal: '*'
-            Resource:
-              - !Join
-                - ''
-                - - 'arn:'
-                  - !Ref 'AWS::Partition'
-                  - ':s3:::'
-                  - !Ref 'ServerlessDeploymentBucket'
-                  - /*
-              - !Join
-                - ''
-                - - 'arn:'
-                  - !Ref 'AWS::Partition'
-                  - ':s3:::'
-                  - !Ref 'ServerlessDeploymentBucket'
-            Condition:
-              Bool:
-                aws:SecureTransport: false
-  AppLogGroup:
+  NodeServeStaticLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: /aws/lambda/node-runtime-serve-static-dev-app
+      LogGroupName: /aws/lambda/node-runtime-serve-static
   IamRoleLambdaExecution:
     Type: AWS::IAM::Role
     Properties:
@@ -78,32 +45,39 @@ Resources:
           - dev
           - !Ref 'AWS::Region'
           - lambdaRole
-  AppLambdaFunction:
-    Type: AWS::Lambda::Function
+  NodeServeStaticFunction:
+    Type: AWS::Serverless::Function
     Properties:
-      Code:
-        S3Bucket: !Ref 'ServerlessDeploymentBucket'
-        S3Key: serverless/node-runtime-serve-static/dev/1684914445316-2023-05-24T07:47:25.316Z/node-runtime-serve-static.zip
+      CodeUri: output
       Handler: index.handler
       Runtime: nodejs18.x
-      FunctionName: node-runtime-serve-static-dev-app
+      FunctionName: node-runtime-serve-static
       MemorySize: 1024
       Timeout: 6
+      Environment:
+        Variables:
+          NODE_ENV: dev
       Role: !GetAtt 'IamRoleLambdaExecution.Arn'
     DependsOn:
-      - AppLogGroup
+      - NodeServeStaticLogGroup
   ApiGatewayRestApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
-      Name: dev-node-runtime-serve-static
+      Name: node-runtime-serve-static
       EndpointConfiguration:
         Types:
           - EDGE
       Policy: ''
-  ApiGatewayMethodGet:
+  ApiGatewayResourceProxyVar:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt 'ApiGatewayRestApi.RootResourceId'
+      PathPart: '{proxy+}'
+      RestApiId: !Ref 'ApiGatewayRestApi'
+  ApiGatewayMethodAny:
     Type: AWS::ApiGateway::Method
     Properties:
-      HttpMethod: GET
+      HttpMethod: ANY
       RequestParameters: {}
       ResourceId: !GetAtt 'ApiGatewayRestApi.RootResourceId'
       RestApiId: !Ref 'ApiGatewayRestApi'
@@ -119,22 +93,47 @@ Resources:
             - ':apigateway:'
             - !Ref 'AWS::Region'
             - :lambda:path/2015-03-31/functions/
-            - !GetAtt 'AppLambdaFunction.Arn'
+            - !GetAtt 'NodeServeStaticFunction.Arn'
             - /invocations
       MethodResponses: []
     DependsOn:
-      - AppLambdaPermissionApiGateway
-  ApiGatewayDeployment1684914426041:
+      - NuxtLambdaPermissionApiGateway
+  ApiGatewayMethodProxyVarAny:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref 'ApiGatewayResourceProxyVar'
+      RestApiId: !Ref 'ApiGatewayRestApi'
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Join
+          - ''
+          - - 'arn:'
+            - !Ref 'AWS::Partition'
+            - ':apigateway:'
+            - !Ref 'AWS::Region'
+            - :lambda:path/2015-03-31/functions/
+            - !GetAtt 'NodeServeStaticFunction.Arn'
+            - /invocations
+      MethodResponses: []
+    DependsOn:
+      - NuxtLambdaPermissionApiGateway
+  ApiGatewayDeployment1684885449091:
     Type: AWS::ApiGateway::Deployment
     Properties:
       RestApiId: !Ref 'ApiGatewayRestApi'
       StageName: dev
     DependsOn:
-      - ApiGatewayMethodGet
-  AppLambdaPermissionApiGateway:
+      - ApiGatewayMethodAny
+      - ApiGatewayMethodProxyVarAny
+  NuxtLambdaPermissionApiGateway:
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !GetAtt 'AppLambdaFunction.Arn'
+      FunctionName: !GetAtt 'NodeServeStaticFunction.Arn'
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceArn: !Join
@@ -149,15 +148,6 @@ Resources:
           - !Ref 'ApiGatewayRestApi'
           - /*/*
 Outputs:
-  ServerlessDeploymentBucketName:
-    Value: !Ref 'ServerlessDeploymentBucket'
-    Export:
-      Name: sls-node-runtime-serve-static-dev-ServerlessDeploymentBucketName
-  AppLambdaFunctionQualifiedArn:
-    Description: Current Lambda function version
-    Value: !Ref 'AppLambdaVersionWhNyGgsnUTLn44rKupI10njfcrO3V53fWq51SjwSFM'
-    Export:
-      Name: sls-node-runtime-serve-static-dev-AppLambdaFunctionQualifiedArn
   ServiceEndpoint:
     Description: URL of the service endpoint
     Value: !Join
@@ -170,4 +160,4 @@ Outputs:
         - !Ref 'AWS::URLSuffix'
         - /dev
     Export:
-      Name: sls-node-runtime-serve-static-dev-ServiceEndpoint
+      Name: sls-node-runtime-serve-static-ServiceEndpoint

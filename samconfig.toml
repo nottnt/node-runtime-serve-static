@@ -4,7 +4,7 @@ version = 0.1
 
 [default]
 [default.global.parameters]
-stack_name = " node-runtime-serve-static"
+stack_name = "node-runtime-serve-static"
 
 [default.build.parameters]
 cached = true
@@ -19,11 +19,11 @@ capabilities = "CAPABILITY_NAMED_IAM"
 #confirm_changeset = true
 confirm_changeset = false
 resolve_s3 = true
-s3_prefix = " node-runtime-serve-static"
+s3_prefix = "node-runtime-serve-static"
 #s3_prefix = "aws-sam-cli-managed-default-samclisourcebucket"
 region = "ap-southeast-1"
 image_repositories = []
-stack_name = " node-runtime-serve-static"
+stack_name = "node-runtime-serve-static"
 
 [default.package.parameters]
 resolve_s3 = true
